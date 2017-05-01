@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -7,6 +8,9 @@ namespace ContosoU.Models
 {
     public class Student: Person
     {
+
+        [DataType(DataType.Date)]
+        [DisplayFormat(DataFormatString="{0:yyyy-MM-dd}",ApplyFormatInEditMode = true)]
         public DateTime EnrollmentDate { get; set; }
 
         // ================== NAVIGATION PROPERTY ========================//
@@ -14,7 +18,7 @@ namespace ContosoU.Models
          * entities that are related to this entity. In this case, the Enrollments property of
          * a Student entity will hold all of the Enrollments that are ralated to that Student.
          * In other words, if a given student row in the database has two related enrollment rows
-         * (rows that containt that student's primary key value in their studentid foreign key column),
+         * (rows that containt that student's primary key value in their student id foreign key column),
          *  that student entity's enrollment navigation property will contain those two
          *  enrollment entities.
          * 
