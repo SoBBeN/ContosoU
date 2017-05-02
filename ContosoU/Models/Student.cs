@@ -26,6 +26,7 @@ namespace ContosoU.Models
          * Navigation properties are typically defined as virtual so that they can take advantage
          * of certain Entity Framework functionality such as as lazy loading.
          * Note: Lazy loading is not yet available in EF core (EF = Entity Framework)
+         * 
          */
 
         public virtual ICollection<Enrollment> Enrollments { get; set;}//1 student: many enrollment
