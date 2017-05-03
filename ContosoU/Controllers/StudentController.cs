@@ -97,7 +97,7 @@ namespace ContosoU.Controllers
                 case "lname_desc":
                     students = students.OrderByDescending(s => s.LastName);
                     break;
-                    //FirstName
+                //FirstName
                 case "fname":
                     students = students.OrderBy(s => s.FirstName);
                     break;
@@ -155,6 +155,7 @@ namespace ContosoU.Controllers
             //var student = await _context.Students
             //    .SingleOrDefaultAsync(m => m.ID == id);
 
+            //querying the database again
             var student = await _context.Students
                 .Include(s=>s.Enrollments).ThenInclude(c=>c.Course)//This is the join in SQL
                 .AsNoTracking()

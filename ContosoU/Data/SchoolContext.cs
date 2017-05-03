@@ -27,6 +27,13 @@ namespace ContosoU.Data
         public DbSet<Enrollment> Enrollments { get; set; }
         public DbSet<Course> Courses { get; set; }
 
+        //Complex Data Model
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<OfficeAssignment> OfficeAssignments { get; set; }
+        public DbSet<CourseAssignment> CourseAssignments { get; set; }
+
+        //Complex
+
         /*
          * When the database is created, EF creates tables that have names the same as the DbSet
          * property names. Property names for collections are typically plural (Students rather
@@ -40,7 +47,15 @@ namespace ContosoU.Data
             modelBuilder.Entity<Enrollment>().ToTable("Enrollment");
             modelBuilder.Entity<Student>().ToTable("Student");
             modelBuilder.Entity<Instructor>().ToTable("Instructor");
+            modelBuilder.Entity<Person>().ToTable("Person");
 
+            //Complex Date Model
+            modelBuilder.Entity<OfficeAssignment>().ToTable("OfficeAssignment");
+            modelBuilder.Entity<CourseAssignment>().ToTable("CourseAssignment");
+            modelBuilder.Entity<Department>().ToTable("Department");
+
+            //Composite PK on CourseAssignment (CourseID, InstructorID)    ====MyNote 1====
+            modelBuilder.Entity<CourseAssignment>().HasKey(c => new { c.CourseID, c.InstructorID });
         }
     }
 }
