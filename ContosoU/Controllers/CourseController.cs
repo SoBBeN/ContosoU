@@ -21,21 +21,21 @@ namespace ContosoU.Controllers
         //Bpoirier: Reading related data
         //Build a custom method to return a sorted list of departments for
         //our dropdown filter
-        private IQueryable<Course> GetCourses(int? SeletedDepartment)
+        private IQueryable<Course> GetCourses(int? SelectedDepartment)
         {
             //Get all department sorted by name
             var department = _context.Departments.OrderBy(d => d.Name).ToList();
 
             //Add ViewData for use within View
-            ViewData["SeletedDepartment"] = new SelectList(department, "DepartmentID", "Name", SeletedDepartment);//dropdown??
+            ViewData["SelectedDepartment"] = new SelectList(department, "DepartmentID", "Name", SelectedDepartment);//dropdown??
             //Retrieve the value of incoming parameter
-            int departmentId = SeletedDepartment.GetValueOrDefault();
+            int departmentId = SelectedDepartment.GetValueOrDefault();
 
             //Get courses belonging to that department
             IQueryable<Course> courses = _context.Courses
                 //Where()
                 //Where(DepartmentID == 1)
-                .Where(c => !SeletedDepartment.HasValue || c.DepartmentID == departmentId)
+                .Where(c => !SelectedDepartment.HasValue || c.DepartmentID == departmentId)
                 .OrderBy(d => d.CourseID)
                 .Include(d => d.Department);
 
@@ -44,14 +44,22 @@ namespace ContosoU.Controllers
 
 
         // GET: Course
-        public async Task<IActionResult> Index()
+        //old Index Code Bpoirier
+        //public async Task<IActionResult> Index()
+        //{
+        //    var schoolContext = _context.Courses.Include(c => c.Department);
+        //    return View(await schoolContext.ToListAsync());
+        //}
+
+        public async Task<IActionResult> Index(int? SelectedDepartment)
         {
-            var schoolContext = _context.Courses.Include(c => c.Department);
-            return View(await schoolContext.ToListAsync());
+            //The SelectedDepartment refers to a Select box (dropdown) within our view
+            IQueryable<Course> courses = GetCourses(SelectedDepartment);
+            return View(await courses.ToListAsync());
         }
 
-        // GET: Course/Details/5
-        public async Task<IActionResult> Details(int? id)
+            // GET: Course/Details/5
+            public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {

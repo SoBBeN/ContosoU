@@ -9,18 +9,36 @@
 <p>
     <a asp-action="Create" class="btn btn-primary"><i class="glyphicon glyphicon-plus"></i> Create New</a>
 </p>
+@*Bpoirier: Reading and Related Data:
+            Add Custom method to return list of department for dropdown filter
+*@
+<form asp-action="Index">
+    <div class="form-inline">
+        <div class="form-group">
+            Select Department: <select class="form-control" input-sm
+                                       asp-items="ViewBag.SelectedDepartment"
+                                       id="SelectedDepartment"
+                                       name="SelectedDepartment"
+                                       onchange="$(this).closest('form').submit();">
+                                    <option value="">All</option>
+                               </select>
+            <button type="submit" class="btn btn-success"><i class="glyphicon glyphicon-filter"></i> Filter</button>
+        </div>
+    </div>
+</form>
 <table class="table">
     <thead>
         <tr>
             <th>
                 @Html.DisplayNameFor(model => model.CourseID)
             </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Credits)
+            </th>
                 <th>
                     @Html.DisplayNameFor(model => model.Title)
                 </th>
-                <th>
-                    @Html.DisplayNameFor(model => model.Credits)
-                </th>
+                
             <th>
                 @Html.DisplayNameFor(model => model.Department)
             </th>
