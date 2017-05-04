@@ -30,7 +30,7 @@ namespace ContosoU.Models
          * 
          */
 
-        public virtual ICollection<Enrollment> Enrollments { get; set;}//1 student: many enrollment
+        public virtual ICollection<Enrollment> Enrollments { get; set;} //1 student: many enrollment
 
     }
 }
