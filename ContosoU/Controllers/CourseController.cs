@@ -7,9 +7,12 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using ContosoU.Data;
 using ContosoU.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ContosoU.Controllers
 {
+    [Authorize] //Need to be LOG IN to see the course View Bpoirier
+
     public class CourseController : Controller
     {
         private readonly SchoolContext _context;
@@ -58,8 +61,9 @@ namespace ContosoU.Controllers
             return View(await courses.ToListAsync());
         }
 
-            // GET: Course/Details/5
-            public async Task<IActionResult> Details(int? id)
+        // GET: Course/Details/5
+        [AllowAnonymous]//Bpoirier Let them see without being Log In
+        public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {
@@ -182,6 +186,18 @@ namespace ContosoU.Controllers
             _context.Courses.Remove(course);
             await _context.SaveChangesAsync();
             return RedirectToAction("Index");
+        }
+
+
+
+        
+        [AllowAnonymous]//Bpoirier Let them see without being Log In
+
+        public async Task<IActionResult> Listing(int? SelectedDepartment)
+        {
+            var courses = GetCourses(SelectedDepartment);
+
+            return View(await courses.ToListAsync());
         }
 
         private bool CourseExists(int id)

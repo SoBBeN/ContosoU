@@ -1,4 +1,6 @@
-﻿namespace ContosoU.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace ContosoU.Models
 {
  public class Enrollment
     {
@@ -27,6 +29,8 @@
          * 
          */
 
+        //Show "No Grade" instead of blank when Grade is NULL
+        [DisplayFormat(NullDisplayText = "No Grade")]
         public Grade? Grade { get; set; }//The questing mark beside the variable type makes this nullable
         //We made Grade nullable because we dont get a grade right away
 

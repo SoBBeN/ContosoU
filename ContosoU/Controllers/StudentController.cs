@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using ContosoU.Data;
 using ContosoU.Models;
 using ContosoU.Helpers;
+using ContosoU.Models.SchoolViewModels;
 
 namespace ContosoU.Controllers
 {
@@ -325,6 +326,23 @@ namespace ContosoU.Controllers
                 return RedirectToAction("Delete", new { id = id, saveChangesError = true } );
             }
         }
+        //Bpoirier
+        //GEt Student/Stats
+        public async Task<IActionResult> Stats()
+        {
+            //Populate the EnrollmentDateGroup ViewModel with Student Statistics
+            IQueryable<EnrollmentDateGroup> data =
+                from student in _context.Students //FROM Students
+                group student by student.EnrollmentDate into dateGroup //GROUP BY Enrollmentdate
+                select new EnrollmentDateGroup //SELECT EnrollmentDate COUNT(*) as StudentCount
+                {
+                    EnrollmentDate = dateGroup.Key,
+                    StudentCount = dateGroup.Count()
+                };
+
+            return View(await data.AsNoTracking().ToListAsync());
+        }
+
 
         private bool StudentExists(int id)
         {

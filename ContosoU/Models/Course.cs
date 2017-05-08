@@ -16,7 +16,7 @@ namespace ContosoU.Models
         [Display(Name ="Course Number")]
         [Required]
         public int CourseID { get; set; }//PK
-
+        
         [StringLength(50,MinimumLength = 3)]
         public string Title { get; set; }
 
