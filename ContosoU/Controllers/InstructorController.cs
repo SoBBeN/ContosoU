@@ -92,6 +92,7 @@ namespace ContosoU.Controllers
             }
 
             var instructor = await _context.Instructors
+                .Include(i => i.OfficeAssignment) //BPoirier: include office
                 .SingleOrDefaultAsync(m => m.ID == id);
             if (instructor == null)
             {
@@ -106,8 +107,36 @@ namespace ContosoU.Controllers
         {
             var instructor = new Instructor();
             instructor.Courses = new List<CourseAssignment>();
+            //Populate the AssignedCourseData View Model
+            PopulateAssignedCourseData(instructor);
 
             return View();
+        }
+        //Method I Created BPoirier
+        private void PopulateAssignedCourseData(Instructor instructor)
+        {
+            //get all courses
+            var allCourses = _context.Courses;
+
+            //create a hashset of instructor courses
+            var instructorCourses = new HashSet<int>(instructor.Courses.Select(c => c.CourseID));
+
+            //Create and populate the AssignedCourseData ViewModel
+            var viewModel = new List<AssignedCourseData>();//create
+
+            //populate it once for each of the courses within allCourses
+            foreach (var course in allCourses)
+            {
+                viewModel.Add(new AssignedCourseData
+                {
+                    CourseID = course.CourseID,
+                    Title = course.Title,
+                    Assigned = instructorCourses.Contains(course.CourseID)
+                });
+            }
+
+            //Save the viewModel within the ViewData object for use within View
+            ViewData["Courses"] = viewModel;
         }
 
         // POST: Instructor/Create
@@ -115,8 +144,27 @@ namespace ContosoU.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("HireDate,LastName,FirstName,Email,OfficeAssignment")] Instructor instructor)
+        public async Task<IActionResult> Create([Bind("HireDate,LastName,FirstName,Email,OfficeAssignment")] Instructor instructor,string[] selectedCourses)
         {
+            //BPoirier: added string[] selectedCourses method argument for course assignment
+            if (selectedCourses != null)
+            {
+                //selectedCourses checkboxes have been check - Create a new list of CourseAssignment
+                instructor.Courses = new List<CourseAssignment>();
+                //Loop the selectedCourses array
+                foreach (var course in selectedCourses)
+                {
+                    //populate the CourseAssignment (InstructorID,CourseID)
+                    var courseToAdd = new CourseAssignment
+                    {
+                        InstructorID = instructor.ID,
+                        CourseID = int.Parse(course)
+                    };
+                    instructor.Courses.Add(courseToAdd);
+                }
+            }
+
+
             if (ModelState.IsValid)
             {
                 _context.Add(instructor);
@@ -134,11 +182,16 @@ namespace ContosoU.Controllers
                 return NotFound();
             }
 
-            var instructor = await _context.Instructors.SingleOrDefaultAsync(m => m.ID == id);
+            var instructor = await _context.Instructors
+                .Include(i => i.OfficeAssignment)//include OfficdAssignment
+                .Include(i => i.Courses) //include courses for AssignedCourseDate viewModel
+                .SingleOrDefaultAsync(m => m.ID == id);
             if (instructor == null)
             {
                 return NotFound();
             }
+            //Populate the AssignedCourseData View Model
+            PopulateAssignedCourseData(instructor);
             return View(instructor);
         }
 
@@ -147,34 +200,113 @@ namespace ContosoU.Controllers
         // more details see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, [Bind("HireDate,ID,LastName,FirstName,Email")] Instructor instructor)
+        public async Task<IActionResult> Edit(int? id, string[] selectedCourses/* [Bind("HireDate,ID,LastName,FirstName,Email")] Instructor instructor*/)
         {
-            if (id != instructor.ID)
+            //BPoirier: Take care of overposting
+            //          Added selectedCourse string array argument
+
+            if (id == null)
             {
                 return NotFound();
             }
+            //Find instructor to update
 
-            if (ModelState.IsValid)
+            var instructorToUpdate = await _context.Instructors
+                .Include(i => i.OfficeAssignment)//include office assignment
+                .Include(i => i.Courses)//incluse Courses for course assigment
+                .ThenInclude(i => i.Course)//for update course
+                .SingleOrDefaultAsync(i => i.ID == id); //only one instructor to update (based on id)
+
+
+            if (await TryUpdateModelAsync<Instructor>(
+                instructorToUpdate, "", i => i.FirstName, i => i.LastName, i => i.OfficeAssignment)) //This part replaces the bind!!!
             {
-                try
+                //check for empty string on office location
+                if (string.IsNullOrWhiteSpace(instructorToUpdate.OfficeAssignment.Location))
                 {
-                    _context.Update(instructor);
-                    await _context.SaveChangesAsync();
+                    instructorToUpdate.OfficeAssignment = null;//remove the complete record
                 }
-                catch (DbUpdateConcurrencyException)
+
+                //TO DO: Update Courses
+                UpdateInstructorCourses(selectedCourses, instructorToUpdate);
+                //TO DO: Save changes (try...catch)
+                if(ModelState.IsValid)
                 {
-                    if (!InstructorExists(instructor.ID))
+                    try
                     {
-                        return NotFound();
+                        _context.Update(instructorToUpdate);
+                        await _context.SaveChangesAsync();
                     }
-                    else
+                    catch(DbUpdateException /*es*/)
                     {
-                        throw;
+                        //We could lodthe error using the ex argument
+                        //Let's simply return a model state error back to the view
+                        ModelState.TryAddModelError("", "Enable to save changes.");
                     }
+                    return RedirectToAction("Index");
+                    
                 }
-                return RedirectToAction("Index");
+                
             }
-            return View(instructor);
+            return View(instructorToUpdate);
+        }//End of Post
+
+        //Method that we created
+        private void UpdateInstructorCourses(string[] selectedCourses,Instructor instructorToUpdate)
+        {
+            if (selectedCourses == null)
+            {
+                //If no checkboxes were selected, initialize the Courses navagation property
+                //with an empty collection and return
+                instructorToUpdate.Courses = new List<CourseAssignment>();
+                return;
+            }
+
+            //To facilitate  efficient lookups, 2 collection will be stored in HashSet objects
+            //: selectedCourseHS -> select course hashset of checkboxe selections
+            //: instructorCourses -> instructor courses (hashset of courses assigned to instructor)
+            var selectedCourseHS = new HashSet<string>(selectedCourses);
+            var instructorCourses = new HashSet<int>
+                (instructorToUpdate.Courses.Select(c => c.Course.CourseID));
+
+            //Loop through all courses in the database and check each course against ones
+            //currently assigned to the instructor versus the ones that were selected in the
+            //view
+            foreach (var course in _context.Courses) //Loop all courses
+            {
+                //CONDITION 1:
+                //If the checkbox for a course was selected but the course isn't in the
+                //Instructor.Couses navigation property, the course is added to the collection
+                //in the navigation property
+                if (selectedCourseHS.Contains(course.CourseID.ToString()))
+                {
+                    if (!instructorCourses.Contains(course.CourseID))
+                    {
+                        instructorToUpdate.Courses.Add(new CourseAssignment
+                        {
+                            InstructorID = instructorToUpdate.ID,
+                            CourseID = course.CourseID
+                        });
+                    }
+
+                }
+                //CONDITION 2:
+                //If the check box for a course wasn't selected, but the course is in the
+                //Instructor.Courses navigation property, the course is removed
+                //from the navigation property.
+                else
+                {
+                    if (instructorCourses.Contains(course.CourseID))
+                    {
+                        CourseAssignment courseToRemove =
+                            instructorToUpdate.Courses
+                            .SingleOrDefault(i => i.CourseID == course.CourseID);
+                        _context.Remove(courseToRemove);
+                    }
+                }
+            }//end foreach
+
+
         }
 
         // GET: Instructor/Delete/5
