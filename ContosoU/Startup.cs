@@ -58,11 +58,39 @@ namespace ContosoU
             // Add application services.
             services.AddTransient<IEmailSender, AuthMessageSender>();
             services.AddTransient<ISmsSender, AuthMessageSender>();
+
+            /*
+             * ==================ADDED BY BENOIT POIRIER================================
+             * ASP.NET Services can be configured with the following lifetimes:
+             * ================
+             * === Transient ==
+             * ================
+             *  Transient lifetime services are created each time they are requested.
+             *  This life time works best for lightweight, stateless services
+             * 
+             * ================
+             * ==== Scoped ====
+             * ================
+             * Scoped lifetime services are created once per request
+             * 
+             * ================
+             * == Siingleton ==
+             * ================
+             * Singleton lifetime services are created the first time they are requested
+             * (or when configureServices is run if you specify the instance t here) and 
+             * then every subsequent request will use the same instance
+             * 
+             * ==================END BENOIT POIRIER======================================
+             */
+
+            //BPoirier: Service for seeding admin user and roles
+            services.AddTransient<AdministratorSeedData>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env,
-            ILoggerFactory loggerFactory, SchoolContext context) /*Added School context Benoit Poirier Middleware to the pipeline*/
+        public async void Configure(IApplicationBuilder app, IHostingEnvironment env,
+            ILoggerFactory loggerFactory, SchoolContext context /*Added School context Benoit Poirier Middleware to the pipeline*/
+            , AdministratorSeedData seeder) //BPoirier add AdminstratorSeed Middleware to pipeline
         {
             loggerFactory.AddConsole(Configuration.GetSection("Logging"));
             loggerFactory.AddDebug();
@@ -93,6 +121,8 @@ namespace ContosoU
 
             //Initialize the database with SEED data Benoit Poirier
             DbInitializer.Initialize(context);
+
+
             /*The first time you run the application the database will be created and seeded with
              * test data. Whenever you change your data model, you can delete the databsee, update
              * your seed method and start fresh with a new database the same way.
@@ -101,6 +131,10 @@ namespace ContosoU
              * re-creating it using CODE FIRST MIGRATIONS
              * 
              */
+
+            //Seed the Administrator and roles
+            await seeder.EnsureSeedData();
+
         }
     }
 }
